@@ -21,6 +21,10 @@ import sbt.Keys._
 import Actions._
 import Utilities._
 import scala.sys.process.Process
+import sbt.internal.util.Terminal
+import sbtcompat.PluginCompat._
+import xsbti.FileConverter
+
 
 object RevolverNativePlugin extends AutoPlugin {
 
@@ -32,20 +36,22 @@ object RevolverNativePlugin extends AutoPlugin {
 
     lazy val settings = Seq(
       reStart := Def.inputTask{
+        implicit val conv: FileConverter = fileConverter.value
+
         val proj = thisProjectRef.value
         val strm = streams.value
         stopAppWithStreams(streams.value, proj)
         assert(!revolverState.getProcess(proj).exists(_.isRunning), "App is already running even though it was supposed to be stopped")
         val color = "[" + updateStateAndGet(_.takeColor) + "]"
         val binary = (Compile / SN.nativeLink).value
-        val logger = new SysoutLogger(reLogTag.value, color, strm.log.ansiCodesSupported)
+        val logger = new SysoutLogger(reLogTag.value, color, Terminal.console.isAnsiSupported)
 
         colorLogger(strm.log).info("[YELLOW]Starting application %s in the background ..." format formatAppName(proj.project, s"$color"))
 
         val args = reStartArgs.value
         val env = (reStart / envVars).value
         val jpb = new java.lang.ProcessBuilder()
-        jpb.command((Seq(binary.getAbsolutePath()) ++ args)*)
+        jpb.command((Seq(toFile(binary).getAbsolutePath()) ++ args)*)
         env.foreach {case(k,v ) => jpb.environment.put(k, v)}
         val process = Process(jpb)
 
@@ -63,8 +69,8 @@ object RevolverNativePlugin extends AutoPlugin {
       },
 
       Global / onLoad := { state =>
-        val colorTags = (reStart/ reColors).value.map(_.toUpperCase formatted "[%s]")
-        GlobalState.update(_.copy(colorPool = collection.immutable.Queue(colorTags: _*)))
+        val colorTags = (reStart/ reColors).value.map(_.toUpperCase.formatted("[%s]"))
+        GlobalState.update(_.copy(colorPool = collection.immutable.Queue(colorTags *)))
         (Global / onLoad).value.apply(state)
       }
     )

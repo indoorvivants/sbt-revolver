@@ -5,7 +5,10 @@ libraryDependencies ++= List(
   "org.http4s" %% "http4s-dsl" % "0.23.34",
   "org.http4s" %% "http4s-circe" % "0.23.34",
   "com.outr" %% "scribe-cats" % "3.19.0",
-  "com.outr" %% "scribe-slf4j" % "3.19.0",
 )
+
+enablePlugins(ScalaNativePlugin)
+
+enablePlugins(RevolverNativePlugin)
 
 reStart / envVars += "TEST_VAR" -> "OK"

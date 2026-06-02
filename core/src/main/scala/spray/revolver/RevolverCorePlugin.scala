@@ -41,7 +41,7 @@ object RevolverCorePlugin extends AutoPlugin {
       reStatus := showStatus(streams.value, thisProjectRef.value),
 
       // default: no arguments to the app
-      reStartArgs in Global := Seq.empty,
+      Global / reStartArgs := Seq.empty,
       reLogTagUnscoped := thisProjectRef.value.project,
 
       // stop a possibly running application if the project is reloaded and the state is reset
@@ -51,9 +51,9 @@ object RevolverCorePlugin extends AutoPlugin {
       },
 
       Global / onLoad  := { state =>
-        val colorTags = (reStart / reColors).value.map(_.toUpperCase formatted "[%s]")
-        GlobalState.update(_.copy(colorPool = collection.immutable.Queue(colorTags: _*)))
-        (onLoad in Global).value.apply(state)
+        val colorTags = (reStart / reColors).value.map(_.toUpperCase.formatted("[%s]"))
+        GlobalState.update(_.copy(colorPool = collection.immutable.Queue(colorTags *)))
+        (Global / onLoad).value.apply(state)
       }
     )
 
