@@ -127,6 +127,12 @@ object Actions {
     }
   }
 
+  val startArgsParserNoJvm: State => complete.Parser[Seq[String]] = { (state: State) =>
+    spaceDelimited("<args>")
+  }
+
+
+
   def formatApp(process: AppProcess, color: String = "[YELLOW]"): String =
     formatAppName(process.projectName, process.consoleColor, color)
   def formatAppName(projectName: String, projectColor: String, color: String = "[YELLOW]"): String =

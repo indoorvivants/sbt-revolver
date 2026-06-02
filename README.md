@@ -1,39 +1,47 @@
+
+**Note: this project is a fork of the original [sbt-revolver](https://github.com/spray/sbt-revolver), adding support for Scala Native, modernizing the build and publishing. The changes were quite extensive but might eventually end up back upstream**
+
+---
+
 _sbt-revolver_ is a plugin for [SBT] enabling a super-fast development turnaround for your Scala applications.
 
 It sports the following features:
 
-* Starting and stopping your application in the background of your interactive SBT shell (in a forked JVM)
+* Starting and stopping your application in the background of your interactive SBT shell
+  * This works for both Scala JVM and Scala Native projects (via separate plugin)
 * Triggered restart: automatically restart your application as soon as some of its sources have been changed
-
-Even though _sbt-revolver_ works great with [spray] on [spray-can] there is nothing _spray_-specific to it. It can
-be used with any Scala application as long as there is some object with a `main` method.
-
 
 ## Installation
 
-_sbt-revolver_ requires [SBT] 1.x or greater. Add the following dependency to your `project/plugins.sbt`:
+_sbt-revolver_ supports sbt 1.x and 2.x. Add the following dependency to your `project/plugins.sbt`:
 
 ```scala
-addSbtPlugin("io.spray" % "sbt-revolver" % "0.10.0")
+addSbtPlugin("com.indoorvivants" % "sbt-revolver" % "0.11.0")
+// for native projects 
+addSbtPlugin("com.indoorvivants" % "sbt-revolver-native" % "0.11.0")
 ```
 
 sbt-revolver is an auto plugin, so you don't need any additional configuration in your build.sbt nor in Build.scala
 to make it work. In multi-module builds it will be enabled for each module. To disable sbt-revolver for some submodules use `Project(...).disablePlugins(RevolverPlugin)` in your build file.
 
-For older versions of sbt see version [0.9.1](https://github.com/spray/sbt-revolver/tree/v0.9.1).
-
 ## Usage
 
 _sbt-revolver_ defines three new commands (SBT tasks) in its own `re` configuration:
 
-* `reStart <args> --- <jvmArgs>` starts your application in a forked JVM.
+* `reStart`
+  * `reStart <args> --- <jvmArgs>` starts your application in a forked JVM.
   The optionally specified (JVM) arguments are appended to the ones configured via the `reStartArgs`/
   `reStart::javaOptions` setting (see the "Configuration" section below). If the application is already running it
   is first stopped before being restarted.
 
+  * `reStart <args>` for Native applications starts your binary in the background
+
 * `reStop` stops application.
-  This is done by simply force-killing the forked JVM. Note, that this means that [shutdown hooks] are not run (see
-  [#20](https://github.com/spray/sbt-revolver/issues/20)).
+
+  - For JVM projects, this is done by simply force-killing the forked JVM. Note, that this means that [shutdown hooks] are not run (see
+  [#20](https://github.com/spray/sbt-revolver/issues/20))
+
+  - Native projects simply have their process killed
 
 * `reStatus` shows an informational message about the current running state of the application.
 
@@ -52,22 +60,22 @@ The following SBT settings defined by _sbt-revolver_ are of potential interest:
 
 * `reStartArgs`, a `SettingKey[Seq[String]]`, which lets you define arguments that _sbt-revolver_ should pass to your
   application on every start. Any arguments given to the `reStart` task directly will be appended to this setting.
-* `reStart / mainClass`, which lets you optionally define a main class to run in `reStart` independently of the
+* `reStart / mainClass` (for JVM projects), which lets you optionally define a  main class to run in `reStart` independently of the
   one set for running the project normally. This value defaults to the value of `compile:run::mainClass`. If you
   don't specify a value here explicitly the same logic as for the normal run main class applies: If only one main class
   is found it one is chosen. Otherwise, the main-class chooser is shown to the user.
-* `reStart / javaOptions`, a `SettingKey[Seq[String]]`, which lets you define the options to pass to the forked JVM
+* `reStart / javaOptions` (for JVM projects), a `SettingKey[Seq[String]]`, which lets you define the options to pass to the forked JVM
   when starting your application
 * `reStart / baseDirectory`, a `SettingKey[File]`, which lets you customize the base directory independently from
   what `run` assumes.
-* `reStart / fullClasspath`, which lets you customize the full classpath path for running with `reStart`.
+* `reStart / fullClasspath` (for JVM projects), which lets you customize the full classpath path for running with `reStart`.
 * `reStart / envVars`, which lets you customize the environment variables for running the application.
-* `reJrebelJar`, a `SettingKey[String]`, which lets you override the value of the `JREBEL_PATH` env variable.
+* `reJrebelJar` (for JVM projects), a `SettingKey[String]`, which lets you override the value of the `JREBEL_PATH` env variable.
 * `reColors`, a `SettingKey[Seq[String]]`, which lets you change colors used to tag output from running processes.
   There are some pre-defined color schemes, see the example section below.
 * `reLogTag`, a `SettingKey[String]`, which lets you change the log tag shown in front of log messages. Default is the
   project name.
-* `debugSettings`, a `SettingKey[Option[DebugSettings]]` to specify remote debugger settings. There's a convenience
+* `debugSettings` (for JVM projects), a `SettingKey[Option[DebugSettings]]` to specify remote debugger settings. There's a convenience
   helper `Revolver.enableDebugging` to simplify to enable debugging (see examples).
 
 Examples:
