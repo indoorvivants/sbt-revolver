@@ -49,9 +49,10 @@ object RevolverNativePlugin extends AutoPlugin {
         colorLogger(strm.log).info("[YELLOW]Starting application %s in the background ..." format formatAppName(proj.project, s"$color"))
 
         val args = reStartArgs.value
+        val parsedArgs = startArgsParserNoJvm.parsed
         val env = (reStart / envVars).value
         val jpb = new java.lang.ProcessBuilder()
-        jpb.command((Seq(toFile(binary).getAbsolutePath()) ++ args)*)
+        jpb.command((Seq(toFile(binary).getAbsolutePath()) ++ args ++ parsedArgs)*)
         env.foreach {case(k,v ) => jpb.environment.put(k, v)}
         val process = Process(jpb)
 
