@@ -8,6 +8,10 @@ val Versions = new {
 lazy val root = project.in(file("."))
   .aggregate(core, jvm, native)
   .aggregate(example.projectRefs*)
+  .settings(
+    publish / skip := true,
+    publishLocal /skip := true
+  )
 
 
 val core = project.in(file("core")).enablePlugins(SbtPlugin)
@@ -43,6 +47,8 @@ lazy val example = projectMatrix.in(file("example"))
   .jvmPlatform(Seq(Versions.Scala3))
   .defaultAxes(VirtualAxis.scalaABIVersion(Versions.Scala3))
   .settings(
+    publish / skip := true,
+    publishLocal / skip := true,
     libraryDependencies ++= List(
       "org.http4s" %%% "http4s-ember-server" % "0.23.34",
       "org.http4s" %%% "http4s-dsl" % "0.23.34",
