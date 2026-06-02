@@ -21,23 +21,23 @@ import sbt.Keys._
 import Actions._
 import Utilities._
 import RevolverKeys.*
+import xsbti.FileConverter
+import sbtcompat.PluginCompat._
 
 
 object RevolverPlugin extends AutoPlugin {
 
     object autoImport extends JvmRevolverKeys {
       object Revolver {
-        def settings = RevolverPlugin.settings
 
         def enableDebugging(port: Int = 5005, suspend: Boolean = false) =
-          debugSettings in reStart := Some(DebugSettings(port, suspend))
+          reStart / debugSettings := Some(DebugSettings(port, suspend))
 
         def noColors: Seq[String] = Nil
         def basicColors = Seq("BLUE", "MAGENTA", "CYAN", "YELLOW", "GREEN")
         def basicColorsAndUnderlined = basicColors ++ basicColors.map("_"+_)
       }
 
-      val revolverSettings = RevolverPlugin.settings
     }
 
 
@@ -45,64 +45,53 @@ object RevolverPlugin extends AutoPlugin {
 
     lazy val settings = Seq(
 
-      mainClass in reStart := (mainClass in run in Compile).value,
+      reStart / mainClass := (Compile / run / mainClass).value,
 
-      fullClasspath in reStart := (fullClasspath in Runtime).value,
+      reStart / fullClasspath := Def.uncached((Runtime / fullClasspath).value),
 
-      reColors in Global in reStart := Revolver.basicColors,
+      Global / reStart / reColors := Revolver.basicColors,
 
       reStart := Def.inputTask{
+        implicit val conv: FileConverter = fileConverter.value
         restartApp(
           streams.value,
           reLogTag.value,
           thisProjectRef.value,
           reForkOptions.value,
-          (mainClass in reStart).value,
-          (fullClasspath in reStart).value,
+          (reStart / mainClass).value,
+          (reStart / fullClasspath).value,
           reStartArgs.value,
           startArgsParser.parsed
         )
-      }.dependsOn(products in Compile).evaluated,
+      }.dependsOn(Compile / products).evaluated,
 
 
       // initialize with env variable
-      reJRebelJar in Global := Option(System.getenv("JREBEL_PATH")).getOrElse(""),
+      Global / reJRebelJar := Option(System.getenv("JREBEL_PATH")).getOrElse(""),
 
-      debugSettings in Global := None,
+      Global / debugSettings := None,
 
       reLogTagUnscoped := thisProjectRef.value.project,
 
       // bake JRebel activation into java options for the forked JVM
-      changeJavaOptionsWithExtra(debugSettings in reStart) { (jvmOptions, jrJar, debug) =>
+      changeJavaOptionsWithExtra(reStart/debugSettings) { (jvmOptions, jrJar, debug) =>
         jvmOptions ++ createJRebelAgentOption(SysoutLogger, jrJar).toSeq ++
           debug.map(_.toCmdLineArg).toSeq
       },
 
       // bundles the various parameters for forking
-      reForkOptions := {
+      reForkOptions := Def.uncached {
         taskTemporaryDirectory.value
         ForkOptions(
           javaHome = javaHome.value,
           outputStrategy = outputStrategy.value,
           bootJars = Vector.empty[File], // bootJars is empty by default because only jars on the user's classpath should be on the boot classpath
-          workingDirectory = Option((baseDirectory in reStart).value),
-          runJVMOptions = (javaOptions in reStart).value.toVector,
+          workingDirectory = Option((reStart / baseDirectory).value),
+          runJVMOptions = (reStart/javaOptions).value.toVector,
           connectInput = false,
-          envVars = (envVars in reStart).value
+          envVars = (reStart / envVars).value
         )
       },
-
-      // stop a possibly running application if the project is reloaded and the state is reset
-      onUnload in Global ~= { onUnload => state =>
-        stopApps(colorLogger(state))
-        onUnload(state)
-      },
-
-      onLoad in Global := { state =>
-        val colorTags = (reColors in reStart).value.map(_.toUpperCase formatted "[%s]")
-        GlobalState.update(_.copy(colorPool = collection.immutable.Queue(colorTags: _*)))
-        (onLoad in Global).value.apply(state)
-      }
     )
 
     override def requires = sbt.plugins.JvmPlugin && spray.revolver.RevolverCorePlugin
@@ -113,9 +102,9 @@ object RevolverPlugin extends AutoPlugin {
    * Changes javaOptions by using transformer function
    * (javaOptions, jrebelJarPath) => newJavaOptions
    */
-  def changeJavaOptions(f: (Seq[String], String) => Seq[String]): Setting[_] =
+  def changeJavaOptions(f: (Seq[String], String) => Seq[String]): Setting[?] =
     changeJavaOptionsWithExtra(sbt.Keys.baseDirectory /* just an ignored dummy */)((jvmArgs, path, _) => f(jvmArgs, path))
 
-  def changeJavaOptionsWithExtra[T](extra: SettingKey[T])(f: (Seq[String], String, T) => Seq[String]): Setting[_] =
-    javaOptions in reStart := f(javaOptions.value, reJRebelJar.value, extra.value)
+  def changeJavaOptionsWithExtra[T](extra: SettingKey[T])(f: (Seq[String], String, T) => Seq[String]): Setting[?] =
+    reStart / javaOptions := Def.uncached(f(javaOptions.value, reJRebelJar.value, extra.value))
 }

@@ -1,0 +1,2 @@
+addSbtPlugin("com.indoorvivants" % "sbt-revolver-native" % System.getProperty("plugin.version"))
+addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.5.12")

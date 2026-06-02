@@ -20,29 +20,32 @@ import sbt.Keys._
 import sbt.{Fork, ForkOptions, LoggedOutput, Logger, Path, ProjectRef, State, complete}
 import java.io.File
 import scala.sys.process.Process
+import xsbti.FileConverter
+import sbt.internal.util.Terminal
+import sbtcompat.PluginCompat.toFiles
 
 object Actions {
   import Utilities._
 
   def restartApp(streams: TaskStreams, logTag: String, project: ProjectRef, option: ForkOptions, mainClass: Option[String],
-                 cp: Classpath, args: Seq[String], startConfig: ExtraCmdLineOptions): AppProcess = {
+                 cp: Classpath, args: Seq[String], startConfig: ExtraCmdLineOptions)(implicit fconv: FileConverter): AppProcess = {
     stopAppWithStreams(streams, project)
     startApp(streams, logTag, project, option, mainClass, cp, args, startConfig)
   }
 
   def startApp(streams: TaskStreams, logTag: String, project: ProjectRef, options: ForkOptions, mainClass: Option[String],
-               cp: Classpath, args: Seq[String], startConfig: ExtraCmdLineOptions): AppProcess = {
+               cp: Classpath, args: Seq[String], startConfig: ExtraCmdLineOptions)(implicit fconv: FileConverter): AppProcess = {
     assert(!revolverState.getProcess(project).exists(_.isRunning))
 
     // fail early
     val theMainClass = mainClass.getOrElse(sys.error("No main class detected!"))
     val color = "[" + updateStateAndGet(_.takeColor) + "]"
-    val logger = new SysoutLogger(logTag, color, streams.log.ansiCodesSupported)
+    val logger = new SysoutLogger(logTag, color, Terminal.console.isAnsiSupported)
     colorLogger(streams.log).info("[YELLOW]Starting application %s in the background ..." format formatAppName(project.project, color))
 
     val appProcess=
       AppProcess(project, color, logger) {
-        forkRun(options, theMainClass, cp.map(_.data), args ++ startConfig.startArgs, logger, startConfig.jvmArgs)
+        forkRun(options, theMainClass, toFiles(cp), args ++ startConfig.startArgs, logger, startConfig.jvmArgs)
       }
     registerAppProcess(project, appProcess)
     appProcess

@@ -1,0 +1,3 @@
+> reStart
+$ exec bash -c 'for i in $(seq 1 5); do curl http://localhost:8888/hello/revolver && break || [ $i -lt 5 ] && sleep 2; done'
+> reStop

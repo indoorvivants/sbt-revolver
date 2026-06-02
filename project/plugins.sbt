@@ -6,6 +6,9 @@ libraryDependencies ++= List(
   "org.scala-sbt" %% "scripted-plugin" % sbtVersion.value
 )
 
+addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.1.0")
+
+
 Compile / unmanagedSourceDirectories +=
   (ThisBuild / baseDirectory).value.getParentFile /
     "core" / "src" / "main" / "scala"
