@@ -22,6 +22,7 @@ object Main extends IOApp:
     EmberServerBuilder
       .default[IO]
       .withPort(port)
+      .withHost(host"localhost")
       .withHttpApp(routes.orNotFound)
       .withShutdownTimeout(1.second)
       .build
