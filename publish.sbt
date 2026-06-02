@@ -1,40 +1,40 @@
-name := "sbt-revolver"
+// name := "sbt-revolver"
 
-organization := "io.spray"
+// organization := "io.spray"
 
-description := "An SBT plugin for dangerously fast development turnaround in Scala"
+// description := "An SBT plugin for dangerously fast development turnaround in Scala"
 
-startYear := Some(2011)
+// startYear := Some(2011)
 
-homepage := Some(url("http://github.com/spray/sbt-revolver"))
+// homepage := Some(url("http://github.com/spray/sbt-revolver"))
 
-organizationHomepage := Some(url("http://spray.io"))
+// organizationHomepage := Some(url("http://spray.io"))
 
-licenses += "Apache License 2.0" -> url("https://github.com/spray/sbt-revolver/raw/master/LICENSE")
+// licenses += "Apache License 2.0" -> url("https://github.com/spray/sbt-revolver/raw/master/LICENSE")
 
-publishTo := {
-  val nexus = "https://oss.sonatype.org/"
-  Some {
-    if (version.value.trim.contains("+")) "snapshots" at nexus + "content/repositories/snapshots"
-    else                                  "releases"  at nexus + "service/local/staging/deploy/maven2"
-  }
-}
+// publishTo := {
+//   val nexus = "https://oss.sonatype.org/"
+//   Some {
+//     if (version.value.trim.contains("+")) "snapshots" at nexus + "content/repositories/snapshots"
+//     else                                  "releases"  at nexus + "service/local/staging/deploy/maven2"
+//   }
+// }
 
-publishMavenStyle := true
-Test / publishArtifact := false
-pomIncludeRepository := { _ => false }
+// publishMavenStyle := true
+// Test / publishArtifact := false
+// pomIncludeRepository := { _ => false }
 
-scmInfo := Some(
-  ScmInfo(
-    browseUrl = url("https://github.com/spray/sbt-revolver"),
-    connection = "scm:git:git@github.com:spray/sbt-revolver.git"
-  )
-)
+// scmInfo := Some(
+//   ScmInfo(
+//     browseUrl = url("https://github.com/spray/sbt-revolver"),
+//     connection = "scm:git:git@github.com:spray/sbt-revolver.git"
+//   )
+// )
 
-developers := List(
-  Developer(
-    "sbt-revolver-contributors",
-    "Sbt Revolver Contributors",
-    "",
-    url("https://github.com/spray/sbt-revolver/graphs/contributors"))
-)
+// developers := List(
+//   Developer(
+//     "sbt-revolver-contributors",
+//     "Sbt Revolver Contributors",
+//     "",
+//     url("https://github.com/spray/sbt-revolver/graphs/contributors"))
+// )
