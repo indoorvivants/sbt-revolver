@@ -51,7 +51,10 @@ object RevolverNativePlugin extends AutoPlugin {
         val args = reStartArgs.value
         val parsedArgs = startArgsParserNoJvm.parsed
         val env = (reStart / envVars).value
+        val cwd = (reStart / baseDirectory).value
+
         val jpb = new java.lang.ProcessBuilder()
+        jpb.directory(cwd)
         jpb.command((Seq(toFile(binary).getAbsolutePath()) ++ args ++ parsedArgs)*)
         env.foreach {case(k,v ) => jpb.environment.put(k, v)}
         val process = Process(jpb)
