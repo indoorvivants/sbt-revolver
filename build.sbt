@@ -26,6 +26,7 @@ val core = projectMatrix
   scalacOptions := Seq("-deprecation", "-encoding", "utf8"),
   scriptedLaunchOpts += s"-Dplugin.version=${version.value}",
   scriptedBufferLog := false,
+  scripted := scripted.tag(Tags.Test),
   Test / test := (Test / test).dependsOn(scripted.toTask("")).value,
   addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.1.0"),
   pluginCrossBuild / sbtVersion := {
@@ -45,6 +46,7 @@ val jvm = projectMatrix.in(file("jvm"))
   scalacOptions := Seq("-deprecation", "-encoding", "utf8"),
   scriptedLaunchOpts += s"-Dplugin.version=${version.value}",
   scriptedBufferLog := false,
+  scripted := scripted.tag(Tags.Test),
   Test / test := (Test / test).dependsOn(scripted.toTask("")).value,
   addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.1.0"),
   pluginCrossBuild / sbtVersion := {
@@ -90,6 +92,7 @@ val process = projectMatrix.in(file("process"))
   scalacOptions := Seq("-deprecation", "-encoding", "utf8"),
   scriptedLaunchOpts += s"-Dplugin.version=${version.value}",
   scriptedBufferLog := false,
+  scripted := scripted.tag(Tags.Test),
   Test / test := (Test / test).dependsOn(scripted.toTask("")).value,
   addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.1.0"),
   sbtTestDirectory := {
