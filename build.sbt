@@ -142,7 +142,7 @@ lazy val example = projectMatrix.in(file("example"))
     }
   )
 
-addCommandAlias("ci", "test")
+addCommandAlias("ci", "scripted")
 
 inThisBuild(
   List(
