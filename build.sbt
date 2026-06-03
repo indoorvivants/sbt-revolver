@@ -16,17 +16,10 @@ lazy val root = project.in(file("."))
     publishLocal /skip := true
   )
 
-
-val core = projectMatrix
-  .in(file("core"))
-  .enablePlugins(SbtPlugin)
-  .jvmPlatform(Seq(Versions.Scala3, Versions.Scala212))
-  .settings(
-  name := "sbt-revolver-core",
+lazy val sharedPluginSettings = Seq(
   scalacOptions := Seq("-deprecation", "-encoding", "utf8"),
   scriptedLaunchOpts += s"-Dplugin.version=${version.value}",
   scriptedBufferLog := false,
-  scripted := scripted.tag(Tags.Test),
   Test / test := (Test / test).dependsOn(scripted.toTask("")).value,
   addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.1.0"),
   pluginCrossBuild / sbtVersion := {
@@ -34,7 +27,23 @@ val core = projectMatrix
       case "2.12" => "1.12.11"
       case _      => "2.0.0-RC14"
     }
+  },
+  sbtTestDirectory := {
+    scalaBinaryVersion.value match {
+      case "2.12" => (sourceDirectory).value / "sbt-test"
+      case _      => (sourceDirectory).value / "sbt-test-sbt2"
+    }
   }
+)
+
+
+val core = projectMatrix
+  .in(file("core"))
+  .enablePlugins(SbtPlugin)
+  .jvmPlatform(Seq(Versions.Scala3, Versions.Scala212))
+  .settings(
+    name := "sbt-revolver-core",
+    sharedPluginSettings
 )
 
 val jvm = projectMatrix.in(file("jvm"))
@@ -42,19 +51,8 @@ val jvm = projectMatrix.in(file("jvm"))
   .enablePlugins(SbtPlugin)
   .jvmPlatform(Seq(Versions.Scala3, Versions.Scala212))
   .settings(
-  name := "sbt-revolver",
-  scalacOptions := Seq("-deprecation", "-encoding", "utf8"),
-  scriptedLaunchOpts += s"-Dplugin.version=${version.value}",
-  scriptedBufferLog := false,
-  scripted := scripted.tag(Tags.Test),
-  Test / test := (Test / test).dependsOn(scripted.toTask("")).value,
-  addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.1.0"),
-  pluginCrossBuild / sbtVersion := {
-    scalaBinaryVersion.value match {
-      case "2.12" => "1.12.11"
-      case _      => "2.0.0-RC14"
-    }
-  }
+    name := "sbt-revolver",
+    sharedPluginSettings
 )
 
 val native = projectMatrix.in(file("native"))
@@ -64,23 +62,7 @@ val native = projectMatrix.in(file("native"))
   .settings(
   name := "sbt-revolver-native",
   addSbtPlugin("org.scala-native" % "sbt-scala-native" % nativeVersion),
-  scalacOptions := Seq("-deprecation", "-encoding", "utf8"),
-  scriptedLaunchOpts += s"-Dplugin.version=${version.value}",
-  scriptedBufferLog := false,
-  Test / test := (Test / test).dependsOn(scripted.toTask("")).value,
-  addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.1.0"),
-  sbtTestDirectory := {
-    scalaBinaryVersion.value match {
-      case "2.12" => (sourceDirectory).value / "sbt-test"
-      case _      => (sourceDirectory).value / "sbt-test-sbt2"
-    }
-  },
-  pluginCrossBuild / sbtVersion := {
-    scalaBinaryVersion.value match {
-      case "2.12" => "1.12.11"
-      case _      => "2.0.0-RC14"
-    }
-  }
+  sharedPluginSettings
 )
 
 val process = projectMatrix.in(file("process"))
@@ -89,24 +71,7 @@ val process = projectMatrix.in(file("process"))
   .jvmPlatform(Seq(Versions.Scala3, Versions.Scala212))
   .settings(
   name := "sbt-revolver-process",
-  scalacOptions := Seq("-deprecation", "-encoding", "utf8"),
-  scriptedLaunchOpts += s"-Dplugin.version=${version.value}",
-  scriptedBufferLog := false,
-  scripted := scripted.tag(Tags.Test),
-  Test / test := (Test / test).dependsOn(scripted.toTask("")).value,
-  addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.1.0"),
-  sbtTestDirectory := {
-    scalaBinaryVersion.value match {
-      case "2.12" => (sourceDirectory).value / "sbt-test"
-      case _      => (sourceDirectory).value / "sbt-test-sbt2"
-    }
-  },
-  pluginCrossBuild / sbtVersion := {
-    scalaBinaryVersion.value match {
-      case "2.12" => "1.12.11"
-      case _      => "2.0.0-RC14"
-    }
-  }
+  sharedPluginSettings
 )
 
 
@@ -175,7 +140,7 @@ inThisBuild(
 Global / concurrentRestrictions := {
   if(sys.env.contains("CI"))
     Seq(
-          Tags.limit(Tags.Test, 1),
+          Tags.limitUntagged(1),
         )
   else
     Seq.empty
