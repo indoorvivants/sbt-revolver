@@ -8,7 +8,7 @@ It sports the following features:
 
 * Starting and stopping your application in the background of your interactive SBT shell
   * This works for both Scala JVM and Scala Native projects (via separate plugin)
-* Triggered restart: automatically restart your application as soon as some of its sources have been changed
+* Running custom processes in the background (via separate plugin)
 
 
 <!--toc:start-->
