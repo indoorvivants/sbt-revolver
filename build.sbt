@@ -168,3 +168,12 @@ inThisBuild(
     )
   )
 )
+
+Global / concurrentRestrictions := {
+  if(sys.env.contains("CI"))
+    Seq(
+          Tags.limit(Tags.Test, 1),
+        )
+  else
+    Seq.empty
+}
