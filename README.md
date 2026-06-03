@@ -1,4 +1,3 @@
-
 **Note: this project is a fork of the original [sbt-revolver](https://github.com/spray/sbt-revolver), adding support for Scala Native, modernizing the build and publishing. The changes were quite extensive but might eventually end up back upstream**
 
 ---
@@ -11,101 +10,132 @@ It sports the following features:
   * This works for both Scala JVM and Scala Native projects (via separate plugin)
 * Triggered restart: automatically restart your application as soon as some of its sources have been changed
 
+
+<!--toc:start-->
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Common settings and tasks](#common-settings-and-tasks)
+  - [RevolverPlugin - JVM applications](#revolverplugin-jvm-applications)
+    - [Hot Reloading](#hot-reloading)
+  - [RevolverNativePlugin - Scala Native applications](#revolvernativeplugin-scala-native-applications)
+  - [RevolverProcessPlugin - arbitrary processes](#revolverprocessplugin-arbitrary-processes)
+- [Triggered Restart](#triggered-restart)
+- [License](#license)
+- [Patch Policy](#patch-policy)
+<!--toc:end-->
+
 ## Installation
 
 _sbt-revolver_ supports sbt 1.x and 2.x. Add the following dependency to your `project/plugins.sbt`:
 
 ```scala
-addSbtPlugin("com.indoorvivants" % "sbt-revolver" % "0.11.0")
+addSbtPlugin("com.indoorvivants" % "sbt-revolver" % "0.11.2")
 // for native projects 
-addSbtPlugin("com.indoorvivants" % "sbt-revolver-native" % "0.11.0")
+addSbtPlugin("com.indoorvivants" % "sbt-revolver-native" % "0.11.2")
+// for launching any process in the background
+addSbtPlugin("com.indoorvivants" % "sbt-revolver-process" % "0.11.2")
 ```
 
-sbt-revolver is an auto plugin, so you don't need any additional configuration in your build.sbt nor in Build.scala
-to make it work. In multi-module builds it will be enabled for each module. To disable sbt-revolver for some submodules use `Project(...).disablePlugins(RevolverPlugin)` in your build file.
 
 ## Usage
 
-_sbt-revolver_ defines three new commands (SBT tasks) in its own `re` configuration:
+*sbt-revolver* provides three plugins (in separate dependencies):
 
-* `reStart`
-  * `reStart <args> --- <jvmArgs>` starts your application in a forked JVM.
+- `RevolverPlugin` – launching JVM applications
+
+- `RevolverNativePlugin` – launching Scala Native applications
+
+- `RevolverProcessPlugin` – launching any process in the background (for example, for Scala.js projects one can launch Vite's dev server in the background)
+
+### Common settings and tasks
+
+All plugins share a common set of tasks and settings
+
+Tasks:
+
+* `reStart` starts the process (if one is already running, it's killed)
+* `reStop` stops application
+* `reStatus` shows an informational message about the current running state of the application.
+
+Settings:
+
+* `reStartArgs`, a `SettingKey[Seq[String]]`, which lets you define arguments that are passed to your
+  application on every start. Any arguments given to the `reStart` task directly will be appended to this setting.
+
+* `reStart / baseDirectory`, a `SettingKey[File]`, which lets you customize the base directory independently from
+  what `run` assumes.
+
+* `reStart / envVars`, which lets you customize the environment variables for running the application
+
+* `reColors`, a `SettingKey[Seq[String]]`, which lets you change colors used to tag output from running processes.
+  There are some pre-defined color schemes, see the example section below.
+
+* `reLogTag`, a `SettingKey[String]`, which lets you change the log tag shown in front of log messages. Default is the
+  project name.
+
+Examples:
+
+- To set fixed start arguments (than you can still append to with the `reStart` task):
+
+    `reStartArgs := Seq("-x")`
+
+
+- To change set of colors used to tag output from multiple processes:
+
+    `reColors := Seq("blue", "green", "magenta")`
+
+    There are predefined color schemes to use with `reColors`: `Revolver.noColors`, `Revolver.basicColors`,
+`Revolver.basicColorsAndUnderlined`.
+
+- To add environment variables when running the application:
+
+    `reStart / envVars := Map("USER_TOKEN" -> "2359298356239")`
+
+
+### RevolverPlugin - JVM applications
+
+- **Installation**: `addSbtPlugin("com.indoorvivants" % "sbt-revolver" % "0.11.2")` in your `project/plugins.sbt`
+- **Enabling**: auto-enabled for all JVM projects
+- **Quick start**: run `reStart` on the project
+
+Tasks:
+
+* `reStart <args> --- <jvmArgs>` starts your application in a forked JVM.
   The optionally specified (JVM) arguments are appended to the ones configured via the `reStartArgs`/
   `reStart::javaOptions` setting (see the "Configuration" section below). If the application is already running it
   is first stopped before being restarted.
 
-  * `reStart <args>` for Native applications starts your binary in the background
-
-* `reStop` stops application.
-
-  - For JVM projects, this is done by simply force-killing the forked JVM. Note, that this means that [shutdown hooks] are not run (see
+* `reStop` stops application. This is done by simply force-killing the forked JVM. Note, that this means that [shutdown hooks] are not run (see
   [#20](https://github.com/spray/sbt-revolver/issues/20))
 
-  - Native projects simply have their process killed
 
-* `reStatus` shows an informational message about the current running state of the application.
+Settings:
 
-#### Triggered Restart
-
-You can use `~reStart` to go into "triggered restart" mode. Your application starts up and SBT watches for changes in
-your source (or resource) files. If a change is detected SBT recompiles the required classes and _sbt-revolver_
-automatically restarts your application.
-When you press &lt;ENTER&gt; SBT leaves "triggered restart" and returns to the normal prompt keeping your application running.
-
-To customize which files should be watched for triggered restart see the sbt documentation about [Triggered Execution](http://www.scala-sbt.org/0.13/docs/Triggered-Execution.html).
-
-## Configuration
-
-The following SBT settings defined by _sbt-revolver_ are of potential interest:
-
-* `reStartArgs`, a `SettingKey[Seq[String]]`, which lets you define arguments that _sbt-revolver_ should pass to your
-  application on every start. Any arguments given to the `reStart` task directly will be appended to this setting.
-* `reStart / mainClass` (for JVM projects), which lets you optionally define a  main class to run in `reStart` independently of the
+* `reStart / mainClass`, which lets you optionally define a  main class to run in `reStart` independently of the
   one set for running the project normally. This value defaults to the value of `compile:run::mainClass`. If you
   don't specify a value here explicitly the same logic as for the normal run main class applies: If only one main class
   is found it one is chosen. Otherwise, the main-class chooser is shown to the user.
-* `reStart / javaOptions` (for JVM projects), a `SettingKey[Seq[String]]`, which lets you define the options to pass to the forked JVM
+* `reStart / javaOptions`, a `SettingKey[Seq[String]]`, which lets you define the options to pass to the forked JVM
   when starting your application
-* `reStart / baseDirectory`, a `SettingKey[File]`, which lets you customize the base directory independently from
-  what `run` assumes.
-* `reStart / fullClasspath` (for JVM projects), which lets you customize the full classpath path for running with `reStart`.
-* `reStart / envVars`, which lets you customize the environment variables for running the application.
-* `reJrebelJar` (for JVM projects), a `SettingKey[String]`, which lets you override the value of the `JREBEL_PATH` env variable.
-* `reColors`, a `SettingKey[Seq[String]]`, which lets you change colors used to tag output from running processes.
-  There are some pre-defined color schemes, see the example section below.
-* `reLogTag`, a `SettingKey[String]`, which lets you change the log tag shown in front of log messages. Default is the
-  project name.
-* `debugSettings` (for JVM projects), a `SettingKey[Option[DebugSettings]]` to specify remote debugger settings. There's a convenience
+* `reStart / fullClasspath`, which lets you customize the full classpath path for running with `reStart`.
+* `reJrebelJar`, a `SettingKey[String]`, which lets you override the value of the `JREBEL_PATH` env variable.
+* `debugSettings`, a `SettingKey[Option[DebugSettings]]` to specify remote debugger settings. There's a convenience
   helper `Revolver.enableDebugging` to simplify to enable debugging (see examples).
+
 
 Examples:
 
-To configure a 2 GB memory limit for your app when started with `reStart`:
+- To configure a 2 GB memory limit for your app when started with `reStart`:
 
-    reStart / javaOptions += "-Xmx2g"
+    `reStart / javaOptions += "-Xmx2g"`
 
-To set a special main class for your app when started with `reStart`:
+- To set a special main class for your app when started with `reStart`:
 
-    reStart / mainClass := Some("com.example.Main")
+    `reStart / mainClass := Some("com.example.Main")`
 
-To set fixed start arguments (than you can still append to with the `reStart` task):
+- To enable debugging with the specified options:
 
-    reStartArgs := Seq("-x")
-
-To enable debugging with the specified options:
-
-    Revolver.enableDebugging(port = 5050, suspend = true)
-
-To change set of colors used to tag output from multiple processes:
-
-    reColors := Seq("blue", "green", "magenta")
-
-There are predefined color schemes to use with `reColors`: `Revolver.noColors`, `Revolver.basicColors`,
-`Revolver.basicColorsAndUnderlined`.
-
-To add environment variables when running the application:
-
-    reStart / envVars := Map("USER_TOKEN" -> "2359298356239")
+    `Revolver.enableDebugging(port = 5050, suspend = true)`
 
 #### Hot Reloading
 
@@ -129,6 +159,42 @@ With JRebel _sbt-revolver_ supports hot reloading:
 * If you changed your application in a way that requires a full restart (see below) press &lt;ENTER&gt; to leave
   triggered compilation and `reStart`.
 * Of course you always stop the application with `reStop`.
+
+
+### RevolverNativePlugin - Scala Native applications
+
+- **Installation**: `addSbtPlugin("com.indoorvivants" % "sbt-revolver-native" % "0.11.2")` in your `project/plugins.sbt`
+- **Enabling**: auto-enabled for all Scala Native projects, disable it with `disablePlugins(RevolverNativePlugin)`
+- **Quick start**: run `reStart` on the project
+
+The plugin does not define any extra tasks/settings beyond the common ones.
+
+### RevolverProcessPlugin - arbitrary processes
+
+- **Installation**: `addSbtPlugin("com.indoorvivants" % "sbt-revolver-process" % "0.11.2")` in your `project/plugins.sbt`
+- **Enabling**: needs to be explicitly enabled with `enablePlugins(RevolverProcessPlugin)`
+- **Quick start**: configure `reStartCommand` on the project and run it with `reStart`
+
+Settings:
+
+* `reStartCommand` is a `Setting[Seq[String]]` that specified the command that will be run. This setting is required - `reStart` will fail if `reStartCommand` is not configured.
+
+Examples:
+
+* If you are using Vite's development server with your Scala.js application, then `reStartCommand := Seq("npm", "run", "build")` will allow you 
+  to run it in the background (leaving the SBT shell free for running `~fastLinkJS` for fast iteration) 
+
+
+## Triggered Restart
+
+You can use `~reStart` to go into "triggered restart" mode. Your application starts up and SBT watches for changes in
+your source (or resource) files. If a change is detected SBT recompiles the required classes and _sbt-revolver_
+automatically restarts your application.
+
+When you press &lt;ENTER&gt; SBT leaves "triggered restart" and returns to the normal prompt keeping your application running.
+
+To customize which files should be watched for triggered restart see the sbt documentation about [Triggered Execution](http://www.scala-sbt.org/0.13/docs/Triggered-Execution.html).
+
 
 ## License
 

@@ -1,0 +1,17 @@
+{
+  "name": "scalajs",
+  "version": "1.0.0",
+  "description": "",
+  "author": "",
+  "license": "ISC",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@scala-js/vite-plugin-scalajs": "^1.1.0",
+    "vite": "^8.0.16"
+  }
+}
