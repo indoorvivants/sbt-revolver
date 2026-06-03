@@ -2,5 +2,5 @@ $ exec npm install
 > compile
 > fastLinkJS
 > reStart
-$ exec bash -c 'for i in $(seq 1 5); do curl http://localhost:5173/index.html && break || [ $i -lt 8 ] && sleep 5; done'
+$ exec bash -c 'for i in $(seq 1 10); do curl http://localhost:5173/index.html && break || [ $i -lt 10 ] && sleep 5; done'
 > reStop
