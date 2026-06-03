@@ -10,3 +10,4 @@ test-output/
 .metals
 project/metals.sbt
 project/project
+**/node_modules
