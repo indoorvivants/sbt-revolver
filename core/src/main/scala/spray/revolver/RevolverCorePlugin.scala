@@ -20,6 +20,7 @@ import sbt._
 import sbt.Keys._
 import Actions._
 import Utilities._
+import sbtcompat.PluginCompat._
 
 object RevolverCorePlugin extends AutoPlugin {
 
@@ -36,9 +37,9 @@ object RevolverCorePlugin extends AutoPlugin {
 
     lazy val settings = Seq(
       reStart / reColors := Revolver.basicColors,
-      reStop := stopAppWithStreams(streams.value, thisProjectRef.value),
+      reStop := Def.uncached(stopAppWithStreams(streams.value, thisProjectRef.value)),
 
-      reStatus := showStatus(streams.value, thisProjectRef.value),
+      reStatus := Def.uncached(showStatus(streams.value, thisProjectRef.value)),
 
       // default: no arguments to the app
       Global / reStartArgs := Seq.empty,
